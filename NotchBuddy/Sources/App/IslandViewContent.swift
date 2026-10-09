@@ -218,6 +218,12 @@ struct OverviewView: View {
                 NSWorkspace.shared.openApplication(at: url, configuration: .init(), completionHandler: nil)
             }
             #endif
+        case "agent_zed":
+            #if !APPSTORE
+            if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "dev.zed.Zed") {
+                NSWorkspace.shared.openApplication(at: url, configuration: .init(), completionHandler: nil)
+            }
+            #endif
         case "agent_codex":
             #if !APPSTORE
             if let url = NSWorkspace.shared.urlForApplication(
@@ -1708,9 +1714,9 @@ struct IntegrationCardView: View {
 
     private var isConfigured: Bool {
         switch task.id {
-        // Cursor sessions are Claude Code running in Cursor's integrated terminal,
-        // so the Cursor pill is set up exactly when the Claude Code hooks are.
-        case "integration_claude", "agent_cursor":
+        // Cursor and Zed sessions are Claude Code running in the editor's integrated
+        // terminal, so their pills are set up exactly when the Claude Code hooks are.
+        case "integration_claude", "agent_cursor", "agent_zed":
             return HookServer.claudeHooksInstalled()
         case "agent_codex":
             #if !APPSTORE
@@ -1904,6 +1910,7 @@ struct IntegrationCardView: View {
                    || task.id == "agent_codex"        || task.id == "agent_copilot"
                    || task.id == "agent_muse"         || task.id == "agent_opencode"
                    || task.id == "agent_amp"          || task.id == "agent_hermes"
+                   || task.id == "agent_zed"
         let isAI    = ChatProvider(pillID: task.id) != nil
         if isConfigured {
             if isHooks { return String(localized: "Hooks installed") }
@@ -2087,6 +2094,18 @@ struct IntegrationCardView: View {
                             .buttonStyle(.plain)
                         }
                         #endif
+                    } else if task.id == "agent_zed" {
+                        #if !APPSTORE
+                        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "dev.zed.Zed") {
+                            Button("Open Zed") {
+                                NSWorkspace.shared.openApplication(at: url, configuration: .init(),
+                                                                   completionHandler: nil)
+                            }
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(Color(hex: task.color).opacity(0.85))
+                            .buttonStyle(.plain)
+                        }
+                        #endif
                     } else if task.id == "agent_codex" {
                         #if !APPSTORE
                         if let url = NSWorkspace.shared.urlForApplication(
@@ -2163,9 +2182,10 @@ struct IntegrationCardView: View {
                             .foregroundColor(Color(hex: "#C9956A").opacity(0.85))
                             .buttonStyle(.plain)
                     }
-                    // Settings button: shown when not configured, except cursor/codex and music
+                    // Settings button: shown when not configured, except cursor/zed/codex and music
                     if !isConfigured
                        && task.id != "agent_cursor"
+                       && task.id != "agent_zed"
                        && task.id != "agent_codex"
                        && task.id != "integration_music" {
                         Button("Settings…") {

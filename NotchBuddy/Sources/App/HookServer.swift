@@ -359,7 +359,8 @@ final class HookServer: @unchecked Sendable {
         // Cursor identified solely by its stable Electron bundle ID.
         // ToDesktop builds other apps too — do not match on "todesktop" alone.
         let isCursorEditor = bundleId.lowercased() == "com.todesktop.230313mzl4w4u92"
-        let isVSCodeEditor = !isCursorEditor && (
+        let isZedEditor = Self.isZedEditor(termProgram: termProgram, bundleId: bundleId)
+        let isVSCodeEditor = !isCursorEditor && !isZedEditor && (
             termProgram.lowercased().contains("vscode") ||
             bundleId.lowercased().contains("vscode"))
 
@@ -367,6 +368,7 @@ final class HookServer: @unchecked Sendable {
         // • "codex" → agent_codex (GitHub build only: workspace pill, approvals in the notch)
         // • other valid coucou_agent → external pill (fire-and-forget, no approval card)
         // • Cursor bundle ID → agent_cursor
+        // • Zed terminal → agent_zed
         // • VS Code → integration_claude
         // • a known terminal (Warp, Terminal, iTerm…) → integration_claude, host recorded on the task
         #if !APPSTORE
@@ -385,6 +387,9 @@ final class HookServer: @unchecked Sendable {
             isExternalAgent = true
         } else if isCursorEditor {
             agentId = "agent_cursor"
+            isExternalAgent = false
+        } else if isZedEditor {
+            agentId = "agent_zed"
             isExternalAgent = false
         } else if isVSCodeEditor {
             agentId = "integration_claude"
@@ -417,6 +422,7 @@ final class HookServer: @unchecked Sendable {
             let handledNote: String
             switch pending.pillId {
             case "agent_cursor":  handledNote = "Handled in Cursor."
+            case "agent_zed":     handledNote = "Handled in Zed."
             case "agent_codex":   handledNote = "Handled in Codex."
             case "agent_copilot": handledNote = "Handled in Copilot CLI."
             case "agent_muse":    handledNote = "Handled in Muse Code."
@@ -595,6 +601,11 @@ final class HookServer: @unchecked Sendable {
         return raw
     }
 
+    /// Zed's terminal sets TERM_PROGRAM=zed; its bundle IDs are dev.zed.Zed and dev.zed.Zed-Preview.
+    private static func isZedEditor(termProgram: String, bundleId: String) -> Bool {
+        termProgram.lowercased() == "zed" || bundleId.lowercased().hasPrefix("dev.zed.zed")
+    }
+
     /// Creates a dynamic pill for a third-party agent on first event, then no-ops.
     /// ID format: "agent_<name>" — never collides with "integration_*" pills.
     /// Inserted right after integration_claude so it appears in the visible prefix(4).
@@ -670,7 +681,8 @@ final class HookServer: @unchecked Sendable {
         let termProgram = payload["term_program"] as? String ?? ""
         let bundleId    = payload["bundle_id"]    as? String ?? ""
         let isCursorEditor = bundleId.lowercased() == "com.todesktop.230313mzl4w4u92"
-        let isVSCodeEditor = !isCursorEditor && (
+        let isZedEditor = Self.isZedEditor(termProgram: termProgram, bundleId: bundleId)
+        let isVSCodeEditor = !isCursorEditor && !isZedEditor && (
             termProgram.lowercased().contains("vscode") ||
             bundleId.lowercased().contains("vscode"))
 
@@ -713,6 +725,8 @@ final class HookServer: @unchecked Sendable {
             pillId = "agent_hermes"
         } else if isCursorEditor {
             pillId = "agent_cursor"
+        } else if isZedEditor {
+            pillId = "agent_zed"
         } else {
             pillId = "integration_claude"
         }
@@ -783,6 +797,7 @@ final class HookServer: @unchecked Sendable {
             let note: String
             switch capturedPillId {
             case "agent_cursor":  note = "Handled in Cursor."
+            case "agent_zed":     note = "Handled in Zed."
             case "agent_codex":   note = "Handled in Codex."
             case "agent_copilot": note = "Handled in Copilot CLI."
             case "agent_muse":    note = "Handled in Muse Code."
@@ -805,6 +820,7 @@ final class HookServer: @unchecked Sendable {
             let note: String
             switch capturedPillId {
             case "agent_cursor":  note = "Still waiting in Cursor."
+            case "agent_zed":     note = "Still waiting in Zed."
             case "agent_codex":   note = "Still waiting in Codex."
             case "agent_copilot": note = "Still waiting in Copilot CLI."
             case "agent_muse":    note = "Still waiting in Muse Code."
@@ -887,7 +903,8 @@ final class HookServer: @unchecked Sendable {
         let termProgram = payload["term_program"]  as? String ?? ""
         let bundleId    = payload["bundle_id"]     as? String ?? ""
         let isCursorEditor = bundleId.lowercased() == "com.todesktop.230313mzl4w4u92"
-        let isVSCodeEditor = !isCursorEditor && (
+        let isZedEditor = Self.isZedEditor(termProgram: termProgram, bundleId: bundleId)
+        let isVSCodeEditor = !isCursorEditor && !isZedEditor && (
             termProgram.lowercased().contains("vscode") ||
             bundleId.lowercased().contains("vscode"))
         #if !APPSTORE
@@ -900,6 +917,8 @@ final class HookServer: @unchecked Sendable {
             pillId = "agent_codex"
         } else if isCursorEditor {
             pillId = "agent_cursor"
+        } else if isZedEditor {
+            pillId = "agent_zed"
         } else {
             pillId = "integration_claude"
         }
